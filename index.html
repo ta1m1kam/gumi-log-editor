@@ -335,6 +335,14 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch{}
 
 function pad(label){ return label + "　".repeat(Math.max(0, 4 - label.length)); }
 function starLine(n){ return "★".repeat(n) + "☆".repeat(5 - n); }
+function paragraphs(text){
+  return text
+    .split("\n")
+    .flatMap(line => line.replace(/([。！？!?])/g, "$1\n").split("\n"))
+    .map(t => t.trim())
+    .filter(Boolean)
+    .join("\n");
+}
 function format(s){
   return [
     `「${s.name}」`,
@@ -345,7 +353,7 @@ function format(s){
     `🔁 リピート：${s.repeat}`,
     "",
     "💬ひとこと",
-    s.comment,
+    paragraphs(s.comment),
     "",
     s.footer,
     "",
