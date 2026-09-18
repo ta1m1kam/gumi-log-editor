@@ -1,4 +1,4 @@
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = `gumi-log-editor-${VERSION}`;
 const SHELL = [
   "./",
@@ -48,7 +48,7 @@ self.addEventListener("fetch", e => {
 async function networkFirst(request) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(request);
+    const res = await fetch(request, { cache: "no-cache" });
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
