@@ -413,8 +413,8 @@ document.querySelectorAll(".stepper button").forEach(b => b.addEventListener("cl
   state.score = Math.min(10, Math.max(0, state.score + +b.dataset.step)); render();
 }));
 
-const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
-const TESSDATA_URL = "https://tessdata.projectnaptha.com/4.0.0_fast";
+const VENDOR = new URL("./vendor/", location.href).href;
+const TESSERACT_URL = VENDOR + "tesseract/tesseract.min.js";
 const OCR_STATUS = {
   "loading tesseract core":"OCR エンジンを準備中", "initializing tesseract":"OCR エンジンを準備中",
   "loading language traineddata":"日本語データを読み込み中（初回のみ）", "initialized api":"準備完了",
@@ -432,7 +432,12 @@ function loadScript(src){
 async function getOcrWorker(onProgress){
   if(ocrWorker) return ocrWorker;
   await loadScript(TESSERACT_URL);
-  ocrWorker = await Tesseract.createWorker("jpn", 1, { langPath: TESSDATA_URL, logger: onProgress });
+  ocrWorker = await Tesseract.createWorker("jpn", 1, {
+    workerPath: VENDOR + "tesseract/worker.min.js",
+    corePath: VENDOR + "tesseract",
+    langPath: VENDOR + "tessdata",
+    logger: onProgress,
+  });
   return ocrWorker;
 }
 function fileToCanvas(file){

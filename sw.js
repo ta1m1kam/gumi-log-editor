@@ -1,4 +1,4 @@
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = `gumi-log-editor-${VERSION}`;
 const SHELL = [
   "./",
@@ -10,10 +10,21 @@ const SHELL = [
   "./icons/favicon.png",
 ];
 
-const RUNTIME_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net", "tessdata.projectnaptha.com"];
+const OCR_ASSETS = [
+  "./vendor/tesseract/tesseract.min.js",
+  "./vendor/tesseract/worker.min.js",
+  "./vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
+  "./vendor/tesseract/tesseract-core-lstm.wasm.js",
+  "./vendor/tessdata/jpn.traineddata.gz",
+];
+const RUNTIME_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL).then(() => Promise.allSettled(OCR_ASSETS.map(a => c.add(a)))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", e => {
