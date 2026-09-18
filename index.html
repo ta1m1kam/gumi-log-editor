@@ -115,7 +115,7 @@ textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 .scan-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .scan-btn{
   all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
-  padding:14px 8px;border-radius:16px;font-weight:700;font-size:14px;white-space:nowrap;
+  min-width:0;padding:14px 6px;border-radius:16px;font-weight:700;font-size:14px;
   background:#fff;border:2px dashed var(--grape);color:#6a44c9;transition:transform .1s,background .15s;
 }
 .scan-btn:active{transform:scale(.98);background:#f4eeff}
@@ -241,8 +241,8 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
     <div class="body">
       <div class="name-wrap"><input type="text" id="name" placeholder="商品名" autocomplete="off" enterkeyhint="next"></div>
       <div class="scan-row">
-        <button class="scan-btn" data-source="camera">📷 撮影して読み取る</button>
-        <button class="scan-btn" data-source="album">🖼 アルバムから選ぶ</button>
+        <button class="scan-btn" data-source="camera">📷 カメラで撮る</button>
+        <button class="scan-btn" data-source="album">🖼 アルバムから</button>
       </div>
       <input type="file" id="scanCamera" accept="image/*" capture="environment" hidden>
       <input type="file" id="scanAlbum" accept="image/*" hidden>
