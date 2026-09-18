@@ -112,9 +112,10 @@ input[type=text]:focus,textarea:focus{border-color:var(--berry);box-shadow:0 0 0
 .name-wrap input{padding:18px 44px;font-size:22px;font-weight:700;text-align:center}
 textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 
+.scan-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .scan-btn{
-  all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  margin-top:16px;padding:14px;border-radius:16px;font-weight:700;font-size:15px;
+  all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:14px 8px;border-radius:16px;font-weight:700;font-size:14px;white-space:nowrap;
   background:#fff;border:2px dashed var(--grape);color:#6a44c9;transition:transform .1s,background .15s;
 }
 .scan-btn:active{transform:scale(.98);background:#f4eeff}
@@ -232,8 +233,12 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
     <p class="hint">商品名を入力（「」は自動でつきます）</p>
     <div class="body">
       <div class="name-wrap"><input type="text" id="name" placeholder="商品名" autocomplete="off" enterkeyhint="next"></div>
-      <button class="scan-btn" id="scanBtn">📷 パッケージ写真から読み取る</button>
-      <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+      <div class="scan-row">
+        <button class="scan-btn" data-source="camera">📷 撮影して読み取る</button>
+        <button class="scan-btn" data-source="album">🖼 アルバムから選ぶ</button>
+      </div>
+      <input type="file" id="scanCamera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="scanAlbum" accept="image/*" hidden>
       <div class="scan-status" id="scanStatus" hidden></div>
       <div class="chips" id="scanChips"></div>
     </div>
@@ -502,11 +507,16 @@ $("scanChips").addEventListener("click", e => {
   state.name = ocrPicked.map(x => ocrChips[x]).join("");
   renderChips(); render();
 });
-$("scanBtn").addEventListener("click", () => $("scanFile").click());
-$("scanFile").addEventListener("change", async e => {
+const scanButtons = [...document.querySelectorAll(".scan-btn")];
+document.querySelector(".scan-row").addEventListener("click", e => {
+  const b = e.target.closest(".scan-btn"); if(!b) return;
+  $(b.dataset.source === "camera" ? "scanCamera" : "scanAlbum").click();
+});
+["scanCamera", "scanAlbum"].forEach(id => $(id).addEventListener("change", runOcr));
+async function runOcr(e){
   const file = e.target.files[0]; e.target.value = "";
   if(!file) return;
-  const btn = $("scanBtn"); btn.disabled = true;
+  scanButtons.forEach(b => b.disabled = true);
   ocrChips = []; ocrPicked = []; renderChips();
   let thumb = "";
   try{
@@ -529,9 +539,9 @@ $("scanFile").addEventListener("change", async e => {
   }catch(err){
     showScanStatus(`${thumb}<span>読み取りに失敗しました。通信環境を確認するか、手で入力してください</span>`);
   }finally{
-    btn.disabled = false;
+    scanButtons.forEach(b => b.disabled = false);
   }
-});
+}
 
 $("prev").addEventListener("click", () => go(idx - 1, "back"));
 $("next").addEventListener("click", async () => {
