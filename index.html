@@ -133,6 +133,12 @@ textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 .chips button:active{transform:scale(.96)}
 .chips button.on{background:var(--lemon);border-color:var(--lemon)}
 .chips .tip{width:100%;font-size:12px;color:var(--ink-soft);font-family:"Kiwi Maru",serif}
+.chips .fulltext{width:100%;margin-top:4px}
+.chips .fulltext summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-soft)}
+.chips .fulltext pre{
+  margin:8px 0 0;padding:12px;border-radius:14px;background:#fff;border:2px solid var(--line);
+  font:inherit;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-all;user-select:text;-webkit-user-select:text;
+}
 
 .big-stars{display:flex;justify-content:space-between;gap:4px}
 .big-stars button{
@@ -426,7 +432,7 @@ const OCR_STATUS = {
   "loading language traineddata":"日本語データを読み込み中（初回のみ）", "initialized api":"準備完了",
   "recognizing text":"文字を読み取り中",
 };
-let ocrWorker, ocrChips = [], ocrPicked = [];
+let ocrWorker, ocrChips = [], ocrPicked = [], ocrFullText = "";
 
 function loadScript(src){
   return new Promise((ok, ng) => {
@@ -472,26 +478,24 @@ function scaleCanvas(src, max){
 }
 async function recognizeMultiScale(worker, canvas, onPass){
   const found = new Map();
+  let fullText = "", bestConf = -1;
   for(const [i, max] of OCR_SCALES.entries()){
     onPass(i + 1, OCR_SCALES.length);
     const scaled = scaleCanvas(canvas, max);
     const { data } = await worker.recognize(scaled);
+    if(data.confidence > bestConf){ bestConf = data.confidence; fullText = data.text || ""; }
     for(const l of data.lines || []){
       const text = l.text.replace(/\s+/g, "");
+      if(!text) continue;
       const score = l.confidence * ((l.bbox.y1 - l.bbox.y0) / scaled.height);
       const prev = found.get(text);
       if(!prev || prev.conf < l.confidence) found.set(text, { text, conf: l.confidence, score });
     }
   }
-  return [...found.values()];
+  return { lines: [...found.values()], fullText };
 }
 function pickCandidates(lines){
-  return lines
-    .filter(c => c.text.length >= 2 && c.conf >= 40)
-    .filter(c => /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}A-Za-z0-9]/u.test(c.text))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6)
-    .map(c => c.text);
+  return lines.sort((a, b) => b.score - a.score).map(c => c.text);
 }
 function showScanStatus(html){ const el = $("scanStatus"); el.hidden = false; el.innerHTML = html; }
 function renderChips(){
@@ -499,6 +503,7 @@ function renderChips(){
   box.innerHTML = ocrChips.length
     ? ocrChips.map((t, i) => `<button data-i="${i}" class="${ocrPicked.includes(i) ? "on" : ""}">${t.replace(/</g, "&lt;")}</button>`).join("")
       + `<div class="tip">タップで商品名に入れます。複数タップするとつながります</div>`
+      + `<details class="fulltext"><summary>読み取った文字を全部見る</summary><pre>${ocrFullText.replace(/</g, "&lt;")}</pre></details>`
     : "";
 }
 $("scanChips").addEventListener("click", e => {
@@ -518,7 +523,7 @@ async function runOcr(e){
   const file = e.target.files[0]; e.target.value = "";
   if(!file) return;
   scanButtons.forEach(b => b.disabled = true);
-  ocrChips = []; ocrPicked = []; renderChips();
+  ocrChips = []; ocrPicked = []; ocrFullText = ""; renderChips();
   let thumb = "";
   try{
     const canvas = await fileToCanvas(file);
@@ -531,8 +536,9 @@ async function runOcr(e){
     };
     progress({ status: "loading tesseract core", progress: 0 });
     const worker = await getOcrWorker(progress);
-    const lines = await recognizeMultiScale(worker, canvas, (i, n) => { pass = `（${i}/${n}）`; });
+    const { lines, fullText } = await recognizeMultiScale(worker, canvas, (i, n) => { pass = `（${i}/${n}）`; });
     ocrChips = pickCandidates(lines);
+    ocrFullText = fullText.trim();
     renderChips();
     showScanStatus(ocrChips.length
       ? `${thumb}<span>読み取れた候補です。商品名をタップしてください</span>`
