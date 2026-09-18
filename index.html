@@ -72,11 +72,52 @@ h1{
 }
 
 .current-name{
-  margin:0 16px 4px;padding:8px 14px;border-radius:14px;text-align:center;
+  margin:0 16px 4px;padding:6px 10px;border-radius:14px;display:flex;align-items:center;gap:10px;
   font-weight:900;font-size:15px;line-height:1.4;color:var(--berry-deep);
-  background:rgba(255,255,255,.7);border:1.5px solid #fff;word-break:break-all;
+  background:rgba(255,255,255,.7);border:1.5px solid #fff;
 }
 .current-name[hidden]{display:none}
+.current-name .label{flex:1;min-width:0;text-align:center;word-break:break-all}
+.photo-thumbs{display:flex;gap:6px;flex-shrink:0}
+.photo-thumbs button{
+  all:unset;cursor:pointer;width:42px;height:42px;border-radius:12px;overflow:hidden;
+  display:grid;place-items:center;background:#fff;border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(120,60,30,.18);transition:transform .1s;
+}
+.photo-thumbs button:active{transform:scale(.94)}
+.photo-thumbs button.on{border-color:var(--lemon)}
+.photo-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-thumbs .add{border:2px dashed #e6c9a8;background:transparent;box-shadow:none;color:var(--ink-soft);font-size:24px}
+
+.viewer{
+  position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;color:#fff8ee;
+  background:rgba(30,18,18,.97);touch-action:none;
+}
+.viewer[hidden]{display:none}
+.viewer-stage{flex:1;min-height:0;display:grid;place-items:center;overflow:hidden;cursor:grab}
+.viewer-stage img{
+  max-width:100%;max-height:100%;object-fit:contain;transform-origin:center;will-change:transform;
+  pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
+}
+.viewer-close{
+  all:unset;cursor:pointer;position:absolute;top:calc(10px + env(safe-area-inset-top));right:14px;
+  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:900;
+  background:rgba(255,255,255,.18);
+}
+.viewer-hint{
+  position:absolute;top:calc(20px + env(safe-area-inset-top));left:16px;margin:0;
+  font-family:"Kiwi Maru",serif;font-size:12px;color:#d9c2a8;pointer-events:none;
+}
+.viewer-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 16px calc(14px + env(safe-area-inset-bottom));
+}
+.viewer-foot .photo-thumbs button{border-color:transparent;background:#4a3838}
+.viewer-foot .photo-thumbs button.on{border-color:var(--lemon)}
+.viewer-del{
+  all:unset;cursor:pointer;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:700;
+  color:#ffb4c4;background:rgba(255,255,255,.1);
+}
 .stage{flex:1;position:relative;padding:8px 16px 0;min-height:0}
 .step{
   position:absolute;inset:8px 16px 0;display:flex;flex-direction:column;
@@ -201,6 +242,36 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
   user-select:all;-webkit-user-select:all;
 }
 .preview-step .count{margin-top:8px;font-size:12px;color:#b89e84;text-align:right;font-family:"Kiwi Maru",serif}
+.make-img{
+  all:unset;cursor:pointer;display:block;margin:0 0 14px;padding:14px;border-radius:16px;text-align:center;
+  font-size:16px;font-weight:900;color:#3a2a2a;background:var(--lemon);box-shadow:0 4px 0 #d9ac1f;
+  transition:transform .08s,box-shadow .08s;
+}
+.make-img:active{transform:translateY(3px);box-shadow:0 1px 0 #d9ac1f}
+.maker{
+  position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:var(--bg);
+  padding-top:env(safe-area-inset-top);
+}
+.maker[hidden]{display:none}
+.maker-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;font-size:18px;font-weight:900}
+.maker-head button{all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:rgba(255,255,255,.8)}
+.maker-body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px;overflow-y:auto}
+.maker-body .photo-thumbs{align-self:flex-start}
+.maker-preview{
+  flex:1;min-height:0;width:100%;display:grid;place-items:center;position:relative;
+}
+.maker-preview img{max-width:100%;max-height:100%;border-radius:16px;box-shadow:var(--shadow);display:block}
+.maker-preview .busy{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-soft);font-family:"Kiwi Maru",serif;font-size:14px}
+.maker-empty{margin:auto;text-align:center;color:var(--ink-soft);font-family:"Kiwi Maru",serif;font-size:14px;line-height:1.8}
+.maker-body .hint{margin:0;font-size:12px;color:var(--ink-soft);font-family:"Kiwi Maru",serif}
+.maker-foot{padding:10px 16px calc(14px + env(safe-area-inset-bottom))}
+.maker-foot button{
+  all:unset;cursor:pointer;display:block;width:100%;padding:16px;border-radius:999px;text-align:center;
+  font-size:18px;font-weight:900;color:#fff;background:var(--berry);box-shadow:0 6px 0 var(--berry-deep);
+  transition:transform .08s,box-shadow .08s;
+}
+.maker-foot button:active{transform:translateY(5px);box-shadow:0 1px 0 var(--berry-deep)}
+.maker-foot button:disabled{opacity:.5;pointer-events:none}
 .preview-step details{margin-top:14px;border-top:1px dashed #6a5555;padding-top:12px}
 .preview-step summary{cursor:pointer;font-size:13px;color:#d9c2a8;letter-spacing:.1em;font-weight:700}
 .preview-step details .fields{display:grid;gap:10px;margin-top:10px}
@@ -241,7 +312,11 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
   <div class="counter"><b id="stepNow">1</b> / <span id="stepTotal">9</span></div>
 </header>
 <div class="progress" id="progress"></div>
-<div class="current-name" id="currentName" hidden></div>
+<div class="current-name" id="currentName" hidden>
+  <div class="photo-thumbs" id="namePhotos"></div>
+  <div class="label" id="nameLabel"></div>
+</div>
+<input type="file" id="photoAdd" accept="image/*" hidden>
 
 <div class="stage" id="stage">
   <section class="step" data-step="name">
@@ -297,6 +372,7 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
   <section class="step preview-step" data-step="done">
     <h2 class="q">🍬 <em>できあがり</em></h2>
     <div class="body">
+      <button class="make-img" id="makeImg">📸 レビュー画像をつくる</button>
       <pre id="out"></pre>
       <div class="count"><span id="count">0</span> / 2200</div>
       <details>
@@ -318,29 +394,61 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
 </div>
 <div class="toast" id="toast"></div>
 
+<div class="maker" id="maker" hidden>
+  <div class="maker-head"><span>📸 レビュー画像</span><button id="makerClose" aria-label="閉じる">✕</button></div>
+  <div class="maker-body">
+    <div class="photo-thumbs" id="makerThumbs"></div>
+    <div class="maker-preview" id="makerPreview"></div>
+    <p class="hint" id="makerHint" hidden>画像を長押ししても保存できます</p>
+  </div>
+  <div class="maker-foot"><button id="makerSave" disabled>💾 保存 / 共有</button></div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <div class="viewer-stage" id="viewerStage"><img id="viewerImg" alt="パッケージ写真"></div>
+  <p class="viewer-hint">ピンチで拡大・ダブルタップで切替</p>
+  <button class="viewer-close" id="viewerClose" aria-label="閉じる">✕</button>
+  <div class="viewer-foot">
+    <div class="photo-thumbs" id="viewerThumbs"></div>
+    <button class="viewer-del" id="viewerDel">🗑 この写真を削除</button>
+  </div>
+</div>
+
 <script>
-const AXES = ["硬さ","弾力","酸っぱさ","味の濃さ","中毒性"];
+const AXES = ["硬さ","弾力","酸っぱさ","味の濃さ","中毒性","🐯好み"];
 const STAR_WORDS = {
   "硬さ":["やわやわ","やわらかめ","ふつう","かため","ガチガチ"],
   "弾力":["ほぼなし","ひかえめ","ふつう","もちもち","超もちもち"],
   "酸っぱさ":["甘い","ほんのり","ふつう","すっぱい","激すっぱ"],
   "味の濃さ":["うすい","ひかえめ","ふつう","しっかり","濃厚"],
   "中毒性":["一粒で満足","たまに","ふつう","止まらない","やみつき"],
+  "🐯好み":["うーん","まあまあ","ふつう","好き","大好き"],
 };
 const DEFAULTS = {
-  name:"", stars:[0,0,0,0,0], score:8, repeat:"", comment:"",
+  name:"", stars:AXES.map(() => 0), score:8, repeat:"", comment:"",
   footer:"みんなのおすすめグミも教えてください。",
   tags:"#グミ #グミレビュー #グミ好き #お菓子 #お菓子レビュー",
 };
 const KEY = "gumi-log-editor:v1";
+const PHOTO_KEY = "gumi-log-editor:photos";
+const MAX_PHOTOS = 4;
 let state = load();
+let photos = loadPhotos();
 let idx = 0;
 
 function load(){
-  try{ return {...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || "{}")}; }
-  catch{ return {...DEFAULTS}; }
+  let s;
+  try{ s = {...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || "{}")}; }
+  catch{ s = {...DEFAULTS}; }
+  s.stars = AXES.map((_, i) => +(s.stars?.[i]) || 0);
+  return s;
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch{} }
+function loadPhotos(){
+  try{ const p = JSON.parse(localStorage.getItem(PHOTO_KEY) || "[]"); return Array.isArray(p) ? p.filter(x => typeof x === "string") : []; }
+  catch{ return []; }
+}
+function savePhotos(){ try{ localStorage.setItem(PHOTO_KEY, JSON.stringify(photos)); }catch{} }
 
 function pad(label){ return label + "　".repeat(Math.max(0, 4 - label.length)); }
 function starLine(n){ return "★".repeat(n) + "☆".repeat(5 - n); }
@@ -462,22 +570,24 @@ async function getOcrWorker(onProgress){
   });
   return ocrWorker;
 }
-function fileToCanvas(file){
+function fileToImage(file){
   return new Promise((ok, ng) => {
     const url = URL.createObjectURL(file), img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
-      const ctx = c.getContext("2d");
-      ctx.filter = "grayscale(1) contrast(1.25)";
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url); ok(c);
-    };
+    img.onload = () => { URL.revokeObjectURL(url); ok(img); };
     img.onerror = () => { URL.revokeObjectURL(url); ng(new Error("image")); };
     img.src = url;
   });
 }
+function drawImage(img, max, filter = "none"){
+  const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+  const ctx = c.getContext("2d");
+  ctx.filter = filter;
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+const toPhoto = img => drawImage(img, 1200).toDataURL("image/jpeg", .72);
 const OCR_SCALES = [1200, 800, 500];
 function scaleCanvas(src, max){
   const s = Math.min(1, max / Math.max(src.width, src.height));
@@ -536,8 +646,11 @@ async function runOcr(e){
   ocrChips = []; ocrPicked = []; ocrFullText = ""; renderChips();
   let thumb = "";
   try{
-    const canvas = await fileToCanvas(file);
-    thumb = `<img src="${canvas.toDataURL("image/jpeg", .6)}" alt="">`;
+    const img = await fileToImage(file);
+    const photo = toPhoto(img);
+    addPhoto(photo);
+    thumb = `<img src="${photo}" alt="">`;
+    const canvas = drawImage(img, 1600, "grayscale(1) contrast(1.25)");
     let pass = "";
     const progress = m => {
       const label = (OCR_STATUS[m.status] || "準備中") + (m.status === "recognizing text" ? pass : "");
@@ -560,6 +673,244 @@ async function runOcr(e){
   }
 }
 
+function addPhoto(url){
+  if(photos.length >= MAX_PHOTOS){ toast(`写真は ${MAX_PHOTOS} 枚までです`); return false; }
+  photos.push(url); savePhotos(); renderPhotos(); return true;
+}
+function photoThumbsHtml(active){
+  return photos.map((p, i) => `<button class="ph${i === active ? " on" : ""}" data-i="${i}" aria-label="写真 ${i + 1}"><img src="${p}" alt=""></button>`).join("");
+}
+function renderPhotos(){
+  $("namePhotos").innerHTML = photoThumbsHtml(-1)
+    + (photos.length < MAX_PHOTOS ? `<button class="add" aria-label="パッケージ写真を追加">＋</button>` : "");
+  if(!viewer.hidden) $("viewerThumbs").innerHTML = photoThumbsHtml(vIdx);
+  if(!maker.hidden) renderMakerThumbs();
+}
+$("currentName").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.classList.contains("add")) $("photoAdd").click(); else openViewer(+b.dataset.i);
+});
+$("photoAdd").addEventListener("change", async e => {
+  const file = e.target.files[0]; e.target.value = "";
+  if(!file) return;
+  try{
+    if(!addPhoto(toPhoto(await fileToImage(file)))) return;
+    if(maker.hidden) openViewer(photos.length - 1); else selectMakerPhoto(photos.length - 1);
+  }catch{ toast("写真を読み込めませんでした"); }
+});
+
+const viewer = $("viewer"), vStage = $("viewerStage"), vImg = $("viewerImg");
+const vPointers = new Map();
+let vIdx = 0, vScale = 1, vX = 0, vY = 0, vGesture = null, vLastTap = 0, vTap = null;
+function vApply(){ vImg.style.transform = `translate(${vX}px,${vY}px) scale(${vScale})`; }
+function vClamp(){
+  const mx = Math.max(0, (vImg.clientWidth * vScale - vStage.clientWidth) / 2);
+  const my = Math.max(0, (vImg.clientHeight * vScale - vStage.clientHeight) / 2);
+  vX = Math.min(mx, Math.max(-mx, vX)); vY = Math.min(my, Math.max(-my, vY));
+}
+function vReset(){ vScale = 1; vX = 0; vY = 0; vApply(); }
+function vZoomAt(p, scale){
+  vX = p.x - (p.x - vX) * scale / vScale; vY = p.y - (p.y - vY) * scale / vScale; vScale = scale;
+  vClamp(); vApply();
+}
+function vPoint(e){
+  const r = vStage.getBoundingClientRect();
+  return { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 };
+}
+function vCenter(){
+  const [a, b = a] = [...vPointers.values()];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: vPointers.size > 1 ? Math.hypot(a.x - b.x, a.y - b.y) : 0 };
+}
+function vBegin(){ vGesture = vPointers.size ? { ...vCenter(), scale: vScale, tx: vX, ty: vY } : null; }
+function openViewer(i){
+  vIdx = i; vImg.src = photos[i]; vReset();
+  $("viewerThumbs").innerHTML = photoThumbsHtml(vIdx); viewer.hidden = false;
+}
+function closeViewer(){ viewer.hidden = true; vPointers.clear(); vGesture = null; }
+$("viewerClose").addEventListener("click", closeViewer);
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !viewer.hidden) closeViewer(); });
+$("viewerThumbs").addEventListener("click", e => { const b = e.target.closest("button"); if(b) openViewer(+b.dataset.i); });
+$("viewerDel").addEventListener("click", () => {
+  photos.splice(vIdx, 1); savePhotos();
+  if(photos.length) openViewer(Math.min(vIdx, photos.length - 1)); else closeViewer();
+  renderPhotos();
+});
+vStage.addEventListener("pointerdown", e => {
+  try{ vStage.setPointerCapture(e.pointerId); }catch{}
+  const p = vPoint(e);
+  vPointers.set(e.pointerId, p);
+  if(vPointers.size === 1){
+    if(Date.now() - vLastTap < 300){ vScale > 1 ? vReset() : vZoomAt(p, 2.5); vLastTap = 0; vTap = null; }
+    else vTap = p;
+  }else vTap = null;
+  vBegin();
+});
+vStage.addEventListener("pointermove", e => {
+  if(!vGesture || !vPointers.has(e.pointerId)) return;
+  vPointers.set(e.pointerId, vPoint(e));
+  const c = vCenter();
+  if(vPointers.size > 1 && vGesture.d > 0){
+    const scale = Math.min(5, Math.max(1, vGesture.scale * c.d / vGesture.d));
+    vX = c.x - (vGesture.x - vGesture.tx) * scale / vGesture.scale;
+    vY = c.y - (vGesture.y - vGesture.ty) * scale / vGesture.scale;
+    vScale = scale;
+  }else{
+    vX = vGesture.tx + (c.x - vGesture.x); vY = vGesture.ty + (c.y - vGesture.y);
+  }
+  vClamp(); vApply();
+});
+["pointerup", "pointercancel"].forEach(t => vStage.addEventListener(t, e => {
+  const p = vPointers.get(e.pointerId);
+  vLastTap = vTap && p && Math.hypot(p.x - vTap.x, p.y - vTap.y) < 12 ? Date.now() : 0;
+  vTap = null; vPointers.delete(e.pointerId); vBegin();
+}));
+vStage.addEventListener("wheel", e => {
+  e.preventDefault();
+  vZoomAt(vPoint(e), Math.min(5, Math.max(1, vScale * (e.deltaY < 0 ? 1.15 : 1 / 1.15))));
+}, { passive: false });
+
+const maker = $("maker"), makerPreview = $("makerPreview");
+const CARD_W = 1080, CARD_H = 1350;
+const CARD_FONT = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif';
+let mIdx = 0, makerCanvas = null, makerRun = 0;
+
+function renderMakerThumbs(){
+  $("makerThumbs").innerHTML = photoThumbsHtml(mIdx)
+    + (photos.length < MAX_PHOTOS ? `<button class="add" aria-label="写真を追加">＋</button>` : "");
+}
+function openMaker(){
+  maker.hidden = false;
+  if(photos.length) selectMakerPhoto(Math.min(mIdx, photos.length - 1));
+  else{
+    renderMakerThumbs(); makerCanvas = null; $("makerSave").disabled = true; $("makerHint").hidden = true;
+    makerPreview.innerHTML = `<div class="maker-empty">パッケージの写真がまだありません<br>「＋」から撮影するかアルバムから選んでください</div>`;
+  }
+}
+function closeMaker(){ maker.hidden = true; }
+async function selectMakerPhoto(i){
+  mIdx = i; renderMakerThumbs();
+  const run = ++makerRun;
+  $("makerSave").disabled = true; $("makerHint").hidden = true;
+  makerPreview.innerHTML = `<div class="busy">画像を生成中…</div>`;
+  try{
+    const canvas = await drawCard(photos[i], state);
+    if(run !== makerRun) return;
+    makerCanvas = canvas;
+    makerPreview.innerHTML = `<img src="${canvas.toDataURL("image/jpeg", .9)}" alt="レビュー画像">`;
+    $("makerSave").disabled = false; $("makerHint").hidden = false;
+  }catch{
+    if(run === makerRun) makerPreview.innerHTML = `<div class="maker-empty">画像を生成できませんでした</div>`;
+  }
+}
+function loadDataUrl(url){
+  return new Promise((ok, ng) => { const img = new Image(); img.onload = () => ok(img); img.onerror = () => ng(new Error("image")); img.src = url; });
+}
+function popText(ctx, text, x, y, size, o = {}){
+  ctx.font = `900 ${size}px ${CARD_FONT}`;
+  ctx.textAlign = o.align || "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+  const width = o.width ?? size * .22;
+  if(width > 0){ ctx.lineWidth = width; ctx.strokeStyle = o.stroke || "#3a2a2a"; ctx.strokeText(text, x, y); }
+  ctx.fillStyle = o.fill || "#fff"; ctx.fillText(text, x, y);
+}
+function wrapChars(ctx, text, size, max){
+  ctx.font = `900 ${size}px ${CARD_FONT}`;
+  const lines = []; let cur = "";
+  for(const ch of text){
+    if(cur && ctx.measureText(cur + ch).width > max){ lines.push(cur); cur = ch; } else cur += ch;
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  if(ctx.roundRect){ ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function pill(ctx, text, x, y, size, bg, fg, align = "left"){
+  ctx.font = `900 ${size}px ${CARD_FONT}`;
+  const w = ctx.measureText(text).width + size * 1.4, h = size * 1.9;
+  const left = align === "right" ? x - w : x;
+  ctx.fillStyle = bg; roundRectPath(ctx, left, y - h / 2, w, h, h / 2); ctx.fill();
+  popText(ctx, text, left + w / 2, y + size * .05, size, { align: "center", fill: fg, width: 0 });
+  return w;
+}
+async function drawCard(photoUrl, s){
+  try{ await Promise.all([document.fonts.load(`900 80px "Zen Maru Gothic"`), document.fonts.load(`700 40px "Zen Maru Gothic"`)]); }catch{}
+  const img = await loadDataUrl(photoUrl);
+  const c = document.createElement("canvas"); c.width = CARD_W; c.height = CARD_H;
+  const ctx = c.getContext("2d");
+  const cover = Math.max(CARD_W / img.naturalWidth, CARD_H / img.naturalHeight) * 1.04;
+  const w = img.naturalWidth * cover, h = img.naturalHeight * cover;
+  ctx.drawImage(img, (CARD_W - w) / 2, (CARD_H - h) / 2 - CARD_H * .06, w, h);
+
+  const top = ctx.createLinearGradient(0, 0, 0, 320);
+  top.addColorStop(0, "rgba(30,15,15,.45)"); top.addColorStop(1, "rgba(30,15,15,0)");
+  ctx.fillStyle = top; ctx.fillRect(0, 0, CARD_W, 320);
+  const rows = AXES.length, rowH = 62, axesTop = CARD_H - 56 - rows * rowH;
+  const bottom = ctx.createLinearGradient(0, axesTop - 480, 0, CARD_H);
+  bottom.addColorStop(0, "rgba(40,20,20,0)"); bottom.addColorStop(.45, "rgba(40,20,20,.62)"); bottom.addColorStop(1, "rgba(40,20,20,.92)");
+  ctx.fillStyle = bottom; ctx.fillRect(0, axesTop - 480, CARD_W, 480 + CARD_H - axesTop);
+
+  pill(ctx, "🍬 グミログ", 48, 84, 34, "rgba(255,250,243,.92)", "#3a2a2a");
+
+  ctx.save();
+  ctx.translate(920, 190); ctx.rotate(-10 * Math.PI / 180);
+  ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = "#ff4f79"; ctx.beginPath(); ctx.arc(0, 0, 128, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.lineWidth = 12; ctx.strokeStyle = "#fff"; ctx.stroke();
+  popText(ctx, "総合評価", 0, -72, 28, { align: "center", width: 0 });
+  popText(ctx, s.score.toFixed(1), 0, 8, 104, { align: "center", stroke: "#e2325f", width: 10 });
+  popText(ctx, "/ 10", 0, 84, 28, { align: "center", width: 0, fill: "#ffe3ea" });
+  ctx.restore();
+
+  ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6;
+  let nameSize = 82, lines = wrapChars(ctx, s.name || "（商品名）", nameSize, CARD_W - 96);
+  if(lines.length > 2){ nameSize = 62; lines = wrapChars(ctx, s.name, nameSize, CARD_W - 96).slice(0, 3); }
+  const lineH = nameSize * 1.22;
+  const repeatY = axesTop - 60;
+  const nameBottom = repeatY - 104;
+  lines.forEach((l, i) => popText(ctx, l, 48, nameBottom - (lines.length - 1 - i) * lineH, nameSize, { width: nameSize * .2 }));
+  ctx.shadowColor = "transparent";
+
+  if(s.repeat === "あり") pill(ctx, "🔁 リピートあり", 48, repeatY, 32, "#7fd66a", "#1d4a12");
+  if(s.repeat === "なし") pill(ctx, "😌 リピートなし", 48, repeatY, 32, "#e6e6e6", "#333");
+
+  AXES.forEach((a, i) => {
+    const y = axesTop + i * rowH + rowH / 2, n = s.stars[i];
+    popText(ctx, a, 48, y, 40, { width: 9 });
+    for(let k = 0; k < 5; k++){
+      const on = k < n;
+      popText(ctx, "★", 370 + k * 58, y + 2, 54, on
+        ? { fill: "#ffd14f", stroke: "#3a2a2a", width: 9 }
+        : { fill: "rgba(255,255,255,.28)", stroke: "rgba(58,42,42,.55)", width: 9 });
+    }
+    if(n) popText(ctx, STAR_WORDS[a][n - 1], 690, y, 36, { fill: "#ffd14f", width: 8 });
+  });
+  return c;
+}
+$("makeImg").addEventListener("click", openMaker);
+$("makerClose").addEventListener("click", closeMaker);
+$("makerThumbs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.classList.contains("add")) $("photoAdd").click(); else selectMakerPhoto(+b.dataset.i);
+});
+$("makerSave").addEventListener("click", async () => {
+  if(!makerCanvas) return;
+  const blob = await new Promise(r => makerCanvas.toBlob(r, "image/jpeg", .92));
+  const file = new File([blob], `gumi-log-${Date.now()}.jpg`, { type: "image/jpeg" });
+  if(navigator.canShare?.({ files: [file] })){
+    try{ await navigator.share({ files: [file] }); }catch{}
+    return;
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast("画像を保存しました 📸");
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !maker.hidden && viewer.hidden) closeMaker(); });
+
 $("prev").addEventListener("click", () => go(idx - 1, "back"));
 $("next").addEventListener("click", async () => {
   if(idx < steps.length - 1){ go(idx + 1, "fwd"); return; }
@@ -572,7 +923,8 @@ $("next").addEventListener("click", async () => {
   toast("コピーしました 🍬 Instagramに貼り付けてね");
 });
 $("reset").addEventListener("click", () => {
-  state = {...DEFAULTS, stars:[...DEFAULTS.stars]}; go(0, "back");
+  state = {...DEFAULTS, stars:[...DEFAULTS.stars]};
+  photos = []; savePhotos(); renderPhotos(); go(0, "back");
 });
 if(navigator.share){
   $("share").addEventListener("click", () => navigator.share({text: format(state)}).catch(() => {}));
@@ -602,7 +954,7 @@ function render(){
   $("name").value = state.name; autosize($("name"));
   const cn = $("currentName");
   cn.hidden = idx === 0 || !state.name.trim();
-  cn.textContent = `「${state.name}」`;
+  $("nameLabel").textContent = `「${state.name}」`;
   $("comment").value = state.comment;
   $("footer").value = state.footer;
   $("tags").value = state.tags;
@@ -620,6 +972,7 @@ function render(){
   save();
 }
 steps[0].classList.add("active");
+renderPhotos();
 render();
 if("serviceWorker" in navigator){
   navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.update().catch(() => {})));
