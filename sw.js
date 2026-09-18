@@ -1,4 +1,4 @@
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `gumi-log-editor-${VERSION}`;
 const SHELL = [
   "./",
@@ -9,6 +9,8 @@ const SHELL = [
   "./icons/apple-touch-icon.png",
   "./icons/favicon.png",
 ];
+
+const RUNTIME_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net", "tessdata.projectnaptha.com"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -27,7 +29,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (url.origin === location.origin) {
     e.respondWith(networkFirst(e.request));
-  } else if (url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com")) {
+  } else if (RUNTIME_HOSTS.some(h => url.hostname.endsWith(h))) {
     e.respondWith(staleWhileRevalidate(e.request));
   }
 });
