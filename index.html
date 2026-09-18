@@ -169,6 +169,12 @@ input[type=text]:focus,textarea:focus{border-color:var(--berry);box-shadow:0 0 0
 }
 textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 
+.scan-tip{
+  margin-top:12px;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.6;color:var(--ink);
+  background:rgba(255,209,79,.22);border:1.5px solid rgba(255,209,79,.6);
+}
+.scan-tip b{display:block;margin-bottom:2px;font-size:13px}
+.scan-tip[hidden]{display:none}
 .scan-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .scan-btn{
   all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
@@ -360,6 +366,10 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
     <p class="hint">商品名を入力（「」は自動でつきます）</p>
     <div class="body">
       <div class="name-wrap"><textarea id="name" rows="1" placeholder="商品名" autocomplete="off" enterkeyhint="next"></textarea></div>
+      <div class="scan-tip" id="scanTip" hidden>
+        <b>📷 いちばん正確な読み取り方</b>
+        入力欄をタップしてキーボードを出し、キーボード上か長押しメニューの「テキストをスキャン」を選ぶと、iPhone がパッケージの文字をそのまま入れてくれます。
+      </div>
       <div class="scan-row">
         <button class="scan-btn" data-source="camera">📷 カメラで撮る</button>
         <button class="scan-btn" data-source="album">🖼 アルバムから</button>
@@ -1071,6 +1081,8 @@ function render(){
   $("count").textContent = [...text].length;
   save();
 }
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+$("scanTip").hidden = !isIOS;
 steps[0].classList.add("active");
 renderPhotos();
 render();
