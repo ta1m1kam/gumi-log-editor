@@ -71,6 +71,12 @@ h1{
   content:"";position:absolute;inset:-4px;border-radius:8px;border:2px solid rgba(255,79,121,.35);
 }
 
+.current-name{
+  margin:0 16px 4px;padding:8px 14px;border-radius:14px;text-align:center;
+  font-weight:900;font-size:15px;line-height:1.4;color:var(--berry-deep);
+  background:rgba(255,255,255,.7);border:1.5px solid #fff;word-break:break-all;
+}
+.current-name[hidden]{display:none}
 .stage{flex:1;position:relative;padding:8px 16px 0;min-height:0}
 .step{
   position:absolute;inset:8px 16px 0;display:flex;flex-direction:column;
@@ -104,12 +110,14 @@ input[type=text],textarea{
 input[type=text]:focus,textarea:focus{border-color:var(--berry);box-shadow:0 0 0 4px rgba(255,79,121,.15)}
 .name-wrap{position:relative}
 .name-wrap::before,.name-wrap::after{
-  position:absolute;top:50%;transform:translateY(-52%);
-  font-size:30px;font-weight:900;color:var(--berry);pointer-events:none;
+  position:absolute;font-size:30px;font-weight:900;color:var(--berry);pointer-events:none;line-height:1;
 }
-.name-wrap::before{content:"「";left:12px}
-.name-wrap::after{content:"」";right:12px}
-.name-wrap input{padding:18px 44px;font-size:22px;font-weight:700;text-align:center}
+.name-wrap::before{content:"「";left:12px;top:16px}
+.name-wrap::after{content:"」";right:12px;bottom:16px}
+.name-wrap textarea{
+  padding:18px 44px;font-size:22px;font-weight:700;text-align:center;line-height:1.4;
+  min-height:0;height:auto;overflow:hidden;resize:none;word-break:break-all;
+}
 textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 
 .scan-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
@@ -233,13 +241,14 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
   <div class="counter"><b id="stepNow">1</b> / <span id="stepTotal">9</span></div>
 </header>
 <div class="progress" id="progress"></div>
+<div class="current-name" id="currentName" hidden></div>
 
 <div class="stage" id="stage">
   <section class="step" data-step="name">
     <h2 class="q">どの<em>グミ</em>を食べた？</h2>
     <p class="hint">商品名を入力（「」は自動でつきます）</p>
     <div class="body">
-      <div class="name-wrap"><input type="text" id="name" placeholder="商品名" autocomplete="off" enterkeyhint="next"></div>
+      <div class="name-wrap"><textarea id="name" rows="1" placeholder="商品名" autocomplete="off" enterkeyhint="next"></textarea></div>
       <div class="scan-row">
         <button class="scan-btn" data-source="camera">📷 カメラで撮る</button>
         <button class="scan-btn" data-source="album">🖼 アルバムから</button>
@@ -335,14 +344,6 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch{}
 
 function pad(label){ return label + "　".repeat(Math.max(0, 4 - label.length)); }
 function starLine(n){ return "★".repeat(n) + "☆".repeat(5 - n); }
-function paragraphs(text){
-  return text
-    .split("\n")
-    .flatMap(line => line.replace(/([。！？!?])/g, "$1\n").split("\n"))
-    .map(t => t.trim())
-    .filter(Boolean)
-    .join("\n");
-}
 function format(s){
   return [
     `「${s.name}」`,
@@ -353,7 +354,7 @@ function format(s){
     `🔁 リピート：${s.repeat}`,
     "",
     "💬ひとこと",
-    paragraphs(s.comment),
+    s.comment,
     "",
     s.footer,
     "",
@@ -404,7 +405,7 @@ function go(n, dir){
   const s = steps[idx];
   s.classList.remove("back"); s.classList.add("active");
   const focusable = s.querySelector("input[type=text],textarea");
-  if(focusable) setTimeout(() => focusable.focus({preventScroll:true}), 320);
+  if(focusable) setTimeout(() => { focusable.focus({preventScroll:true}); if(focusable.id === "name") autosize(focusable); }, 320);
   render();
 }
 const advance = () => setTimeout(() => go(idx + 1, "fwd"), 380);
@@ -423,8 +424,9 @@ $("repeat").addEventListener("click", e => {
   state.repeat = b.dataset.v; render();
   if(was === "") advance();
 });
-$("name").addEventListener("input", e => { state.name = e.target.value; ocrPicked = []; renderChips(); render(); });
-$("name").addEventListener("keydown", e => { if(e.key === "Enter" && isFilled(idx)){ e.preventDefault(); go(idx+1); } });
+function autosize(el){ el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
+$("name").addEventListener("input", e => { state.name = e.target.value.replace(/\n/g, ""); ocrPicked = []; renderChips(); render(); });
+$("name").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); if(isFilled(idx)) go(idx+1); } });
 $("comment").addEventListener("input", e => { state.comment = e.target.value; render(); });
 $("footer").addEventListener("input", e => { state.footer = e.target.value; render(); });
 $("tags").addEventListener("input", e => { state.tags = e.target.value; render(); });
@@ -597,7 +599,10 @@ function render(){
   $("share").hidden = !(last && navigator.share);
   $("reset").hidden = !last;
 
-  $("name").value = state.name;
+  $("name").value = state.name; autosize($("name"));
+  const cn = $("currentName");
+  cn.hidden = idx === 0 || !state.name.trim();
+  cn.textContent = `「${state.name}」`;
   $("comment").value = state.comment;
   $("footer").value = state.footer;
   $("tags").value = state.tags;
