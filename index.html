@@ -182,6 +182,31 @@ textarea{font-size:18px;line-height:1.7;resize:none;min-height:180px}
 .scan-status img{width:48px;height:48px;object-fit:cover;border-radius:10px;border:2px solid var(--line)}
 .scan-status .bar{flex:1;height:6px;border-radius:3px;background:#f3e2cf;overflow:hidden;padding:0;border:0;display:block}
 .scan-status .bar i{display:block;height:100%;background:var(--grape);transition:width .2s}
+.scan-status .recrop{all:unset;cursor:pointer;flex-shrink:0;padding:8px 10px;border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);background:var(--lemon)}
+.cropper{
+  position:fixed;inset:0;height:100dvh;z-index:50;display:flex;flex-direction:column;color:#fff8ee;
+  background:rgba(30,18,18,.97);touch-action:none;padding-top:env(safe-area-inset-top);
+}
+.cropper[hidden]{display:none}
+.cropper-head{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px 8px;font-size:15px;font-weight:700}
+.cropper-head button{all:unset;cursor:pointer;flex-shrink:0;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:900;background:rgba(255,255,255,.18)}
+.cropper-stage{flex:1;min-height:0;position:relative;display:grid;place-items:center;overflow:hidden;cursor:grab}
+.cropper-stage img{
+  max-width:100%;max-height:100%;object-fit:contain;transform-origin:center;will-change:transform;
+  pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;
+}
+.crop-frame{
+  position:absolute;left:6%;right:6%;top:50%;height:24%;transform:translateY(-50%);
+  border:3px solid var(--lemon);border-radius:14px;box-shadow:0 0 0 9999px rgba(20,12,12,.6);pointer-events:none;
+}
+.cropper-hint{flex-shrink:0;margin:8px 16px 0;text-align:center;font-family:"Kiwi Maru",serif;font-size:12px;color:#d9c2a8}
+.cropper-foot{flex-shrink:0;display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:10px 16px calc(24px + env(safe-area-inset-bottom))}
+.cropper-foot button{
+  all:unset;cursor:pointer;padding:16px;border-radius:999px;text-align:center;font-size:16px;font-weight:900;
+  color:#fff;background:var(--berry);box-shadow:0 6px 0 var(--berry-deep);
+}
+.cropper-foot button.ghost{background:rgba(255,255,255,.12);box-shadow:none;color:#fff8ee}
+.cropper-foot button:disabled{opacity:.5;pointer-events:none}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .chips button{
   all:unset;cursor:pointer;padding:10px 14px;border-radius:999px;font-weight:700;font-size:15px;
@@ -415,6 +440,16 @@ input[type=range]{width:100%;margin:26px 0 0;accent-color:var(--berry);height:32
   <div class="maker-foot"><button id="makerSave" disabled>💾 保存 / 共有</button></div>
 </div>
 
+<div class="cropper" id="cropper" hidden>
+  <div class="cropper-head"><span>商品名を枠に合わせてください</span><button id="cropClose" aria-label="閉じる">✕</button></div>
+  <div class="cropper-stage" id="cropStage"><img id="cropImg" alt="撮影した写真"><div class="crop-frame" id="cropFrame"></div></div>
+  <p class="cropper-hint">ピンチで拡大・ドラッグで移動。枠の中だけを読み取ります</p>
+  <div class="cropper-foot">
+    <button class="ghost" id="cropAll">全体から探す</button>
+    <button id="cropRun" disabled>この範囲を読み取る</button>
+  </div>
+</div>
+
 <div class="viewer" id="viewer" hidden>
   <div class="viewer-stage" id="viewerStage"><img id="viewerImg" alt="パッケージ写真"></div>
   <p class="viewer-hint">ピンチで拡大・ダブルタップで切替</p>
@@ -561,7 +596,7 @@ const OCR_STATUS = {
   "loading language traineddata":"日本語データを読み込み中（初回のみ）", "initialized api":"準備完了",
   "recognizing text":"文字を読み取り中",
 };
-let ocrWorker, ocrChips = [], ocrPicked = [], ocrFullText = "";
+let ocrChips = [], ocrPicked = [], ocrFullText = "", ocrProgress = null, ocrWorkerPromise = null;
 
 function loadScript(src){
   return new Promise((ok, ng) => {
@@ -570,16 +605,17 @@ function loadScript(src){
     el.onerror = () => ng(new Error("script")); document.head.appendChild(el);
   });
 }
-async function getOcrWorker(onProgress){
-  if(ocrWorker) return ocrWorker;
-  await loadScript(TESSERACT_URL);
-  ocrWorker = await Tesseract.createWorker("jpn", 1, {
-    workerPath: VENDOR + "tesseract/worker.min.js",
-    corePath: VENDOR + "tesseract",
-    langPath: VENDOR + "tessdata",
-    logger: onProgress,
-  });
-  return ocrWorker;
+function getOcrWorker(){
+  ocrWorkerPromise ??= (async () => {
+    await loadScript(TESSERACT_URL);
+    return Tesseract.createWorker("jpn", 1, {
+      workerPath: VENDOR + "tesseract/worker.min.js",
+      corePath: VENDOR + "tesseract",
+      langPath: VENDOR + "tessdata",
+      logger: m => ocrProgress?.(m),
+    });
+  })().catch(err => { ocrWorkerPromise = null; throw err; });
+  return ocrWorkerPromise;
 }
 function fileToImage(file){
   return new Promise((ok, ng) => {
@@ -625,8 +661,12 @@ async function recognizeMultiScale(worker, canvas, onPass){
   }
   return { lines: [...found.values()], fullText };
 }
+const OCR_NOISE = /原材料|内容量|栄養成分|エネルギー|たんぱく質|脂質|炭水化物|食塩相当量|kcal|保存方法|製造者|販売者|賞味期限|株式会社|お客様|直射日光|高温多湿|[0-9０-９]+\s*(g|ｇ|mg|ml|㎖|㎎)/i;
+const OCR_WORDISH = /[ぁ-んァ-ヶ一-龠ａ-ｚＡ-Ｚa-zA-Zー]/;
 function pickCandidates(lines){
-  return lines.sort((a, b) => b.score - a.score).map(c => c.text);
+  return lines
+    .filter(l => l.text.length >= 2 && OCR_WORDISH.test(l.text) && !OCR_NOISE.test(l.text))
+    .sort((a, b) => b.score - a.score).map(c => c.text);
 }
 function showScanStatus(html){ const el = $("scanStatus"); el.hidden = false; el.innerHTML = html; }
 function renderChips(){
@@ -649,39 +689,75 @@ document.querySelector(".scan-row").addEventListener("click", e => {
   const b = e.target.closest(".scan-btn"); if(!b) return;
   $(b.dataset.source === "camera" ? "scanCamera" : "scanAlbum").click();
 });
-["scanCamera", "scanAlbum"].forEach(id => $(id).addEventListener("change", runOcr));
-async function runOcr(e){
+["scanCamera", "scanAlbum"].forEach(id => $(id).addEventListener("change", onScanFile));
+const OCR_FILTER = "grayscale(1) contrast(1.25)";
+let scanImage = null, scanPhoto = "";
+async function onScanFile(e){
   const file = e.target.files[0]; e.target.value = "";
   if(!file) return;
+  try{ scanImage = await fileToImage(file); }
+  catch{ toast("写真を読み込めませんでした"); return; }
+  scanPhoto = toPhoto(scanImage); addPhoto(scanPhoto);
+  openCropper();
+}
+const recropButton = () => `<button class="recrop">🔍 範囲を選び直す</button>`;
+$("scanStatus").addEventListener("click", e => { if(e.target.closest(".recrop")) openCropper(); });
+async function runScan(job){
   scanButtons.forEach(b => b.disabled = true);
   ocrChips = []; ocrPicked = []; ocrFullText = ""; renderChips();
-  let thumb = "";
+  const thumb = `<img src="${scanPhoto}" alt="">`;
+  let pass = "";
+  ocrProgress = m => {
+    const label = (OCR_STATUS[m.status] || "準備中") + (m.status === "recognizing text" ? pass : "");
+    const pct = Math.round((m.progress || 0) * 100);
+    showScanStatus(`${thumb}<span>${label}</span><span class="bar"><i style="width:${pct}%"></i></span>`);
+  };
   try{
-    const img = await fileToImage(file);
-    const photo = toPhoto(img);
-    addPhoto(photo);
-    thumb = `<img src="${photo}" alt="">`;
-    const canvas = drawImage(img, 1600, "grayscale(1) contrast(1.25)");
-    let pass = "";
-    const progress = m => {
-      const label = (OCR_STATUS[m.status] || "準備中") + (m.status === "recognizing text" ? pass : "");
-      const pct = Math.round((m.progress || 0) * 100);
-      showScanStatus(`${thumb}<span>${label}</span><span class="bar"><i style="width:${pct}%"></i></span>`);
-    };
-    progress({ status: "loading tesseract core", progress: 0 });
-    const worker = await getOcrWorker(progress);
-    const { lines, fullText } = await recognizeMultiScale(worker, canvas, (i, n) => { pass = `（${i}/${n}）`; });
-    ocrChips = pickCandidates(lines);
-    ocrFullText = fullText.trim();
+    ocrProgress({ status: "loading tesseract core", progress: 0 });
+    const worker = await getOcrWorker();
+    const r = await job(worker, (i, n) => { pass = `（${i}/${n}）`; });
+    ocrChips = r.chips; ocrPicked = r.picked; ocrFullText = r.fullText.trim();
+    if(r.picked.length){ state.name = r.picked.map(i => r.chips[i]).join(""); render(); }
     renderChips();
-    showScanStatus(ocrChips.length
-      ? `${thumb}<span>読み取れた候補です。商品名をタップしてください</span>`
-      : `${thumb}<span>文字を読み取れませんでした。明るい場所で正面から撮るか、手で入力してください</span>`);
+    showScanStatus(`${thumb}<span>${r.message}</span>${recropButton()}`);
   }catch(err){
-    showScanStatus(`${thumb}<span>読み取りに失敗しました。通信環境を確認するか、手で入力してください</span>`);
+    showScanStatus(`${thumb}<span>読み取りに失敗しました。通信環境を確認するか、手で入力してください</span>${recropButton()}`);
   }finally{
+    ocrProgress = null;
     scanButtons.forEach(b => b.disabled = false);
   }
+}
+function scanWhole(){
+  return runScan(async (worker, setPass) => {
+    await worker.setParameters({ tessedit_pageseg_mode: "3" });
+    const { lines, fullText } = await recognizeMultiScale(worker, drawImage(scanImage, 1600, OCR_FILTER), setPass);
+    const chips = pickCandidates(lines);
+    return { chips, picked: [], fullText, message: chips.length
+      ? "読み取れた候補です。商品名をタップしてください"
+      : "文字を読み取れませんでした。範囲を選び直すか、手で入力してください" };
+  });
+}
+function scanRegion(rect){
+  return runScan(async worker => {
+    await worker.setParameters({ tessedit_pageseg_mode: "6" });
+    const { data } = await worker.recognize(cropCanvas(scanImage, rect));
+    const chips = (data.lines || []).map(l => l.text.replace(/\s+/g, "")).filter(Boolean);
+    return { chips, picked: chips.map((_, i) => i), fullText: data.text || "", message: chips.length
+      ? "枠の中を読み取りました。違っていたら直すか、範囲を選び直してください"
+      : "枠の中に文字を見つけられませんでした。範囲を選び直してください" };
+  });
+}
+function cropCanvas(img, r){
+  const sx = Math.round(r.x * img.naturalWidth), sy = Math.round(r.y * img.naturalHeight);
+  const sw = Math.max(1, Math.round(r.w * img.naturalWidth)), sh = Math.max(1, Math.round(r.h * img.naturalHeight));
+  const scale = Math.min(4, Math.max(1, 1200 / sw)), pad = 24;
+  const c = document.createElement("canvas");
+  c.width = Math.round(sw * scale) + pad * 2; c.height = Math.round(sh * scale) + pad * 2;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.filter = OCR_FILTER;
+  ctx.drawImage(img, sx, sy, sw, sh, pad, pad, c.width - pad * 2, c.height - pad * 2);
+  return c;
 }
 
 function addPhoto(url){
@@ -710,75 +786,113 @@ $("photoAdd").addEventListener("change", async e => {
   }catch{ toast("写真を読み込めませんでした"); }
 });
 
+function pinchZoom(stage, img, bounds){
+  const pointers = new Map();
+  const z = { scale: 1, x: 0, y: 0 };
+  let gesture = null, lastTap = 0, tap = null;
+  const limit = v => Math.min(6, Math.max(1, v));
+  const apply = () => { img.style.transform = `translate(${z.x}px,${z.y}px) scale(${z.scale})`; };
+  const clamp = () => {
+    const b = bounds();
+    const mx = Math.max(0, (img.clientWidth * z.scale - b.w) / 2), my = Math.max(0, (img.clientHeight * z.scale - b.h) / 2);
+    z.x = Math.min(mx, Math.max(-mx, z.x)); z.y = Math.min(my, Math.max(-my, z.y));
+  };
+  const reset = () => { z.scale = 1; z.x = 0; z.y = 0; apply(); };
+  const zoomAt = (p, scale) => {
+    z.x = p.x - (p.x - z.x) * scale / z.scale; z.y = p.y - (p.y - z.y) * scale / z.scale; z.scale = scale;
+    clamp(); apply();
+  };
+  const point = e => {
+    const r = stage.getBoundingClientRect();
+    return { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 };
+  };
+  const center = () => {
+    const [a, b = a] = [...pointers.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: pointers.size > 1 ? Math.hypot(a.x - b.x, a.y - b.y) : 0 };
+  };
+  const begin = () => { gesture = pointers.size ? { ...center(), scale: z.scale, tx: z.x, ty: z.y } : null; };
+  stage.addEventListener("pointerdown", e => {
+    try{ stage.setPointerCapture(e.pointerId); }catch{}
+    const p = point(e);
+    pointers.set(e.pointerId, p);
+    if(pointers.size === 1){
+      if(Date.now() - lastTap < 300){ z.scale > 1 ? reset() : zoomAt(p, 2.5); lastTap = 0; tap = null; }
+      else tap = p;
+    }else tap = null;
+    begin();
+  });
+  stage.addEventListener("pointermove", e => {
+    if(!gesture || !pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, point(e));
+    const c = center();
+    if(pointers.size > 1 && gesture.d > 0){
+      const scale = limit(gesture.scale * c.d / gesture.d);
+      z.x = c.x - (gesture.x - gesture.tx) * scale / gesture.scale;
+      z.y = c.y - (gesture.y - gesture.ty) * scale / gesture.scale;
+      z.scale = scale;
+    }else{
+      z.x = gesture.tx + (c.x - gesture.x); z.y = gesture.ty + (c.y - gesture.y);
+    }
+    clamp(); apply();
+  });
+  ["pointerup", "pointercancel"].forEach(t => stage.addEventListener(t, e => {
+    const p = pointers.get(e.pointerId);
+    lastTap = tap && p && Math.hypot(p.x - tap.x, p.y - tap.y) < 12 ? Date.now() : 0;
+    tap = null; pointers.delete(e.pointerId); begin();
+  }));
+  stage.addEventListener("wheel", e => {
+    e.preventDefault();
+    zoomAt(point(e), limit(z.scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+  }, { passive: false });
+  return { z, reset, clear: () => { pointers.clear(); gesture = null; } };
+}
+
 const viewer = $("viewer"), vStage = $("viewerStage"), vImg = $("viewerImg");
-const vPointers = new Map();
-let vIdx = 0, vScale = 1, vX = 0, vY = 0, vGesture = null, vLastTap = 0, vTap = null;
-function vApply(){ vImg.style.transform = `translate(${vX}px,${vY}px) scale(${vScale})`; }
-function vClamp(){
-  const mx = Math.max(0, (vImg.clientWidth * vScale - vStage.clientWidth) / 2);
-  const my = Math.max(0, (vImg.clientHeight * vScale - vStage.clientHeight) / 2);
-  vX = Math.min(mx, Math.max(-mx, vX)); vY = Math.min(my, Math.max(-my, vY));
-}
-function vReset(){ vScale = 1; vX = 0; vY = 0; vApply(); }
-function vZoomAt(p, scale){
-  vX = p.x - (p.x - vX) * scale / vScale; vY = p.y - (p.y - vY) * scale / vScale; vScale = scale;
-  vClamp(); vApply();
-}
-function vPoint(e){
-  const r = vStage.getBoundingClientRect();
-  return { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 };
-}
-function vCenter(){
-  const [a, b = a] = [...vPointers.values()];
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: vPointers.size > 1 ? Math.hypot(a.x - b.x, a.y - b.y) : 0 };
-}
-function vBegin(){ vGesture = vPointers.size ? { ...vCenter(), scale: vScale, tx: vX, ty: vY } : null; }
+const viewerZoom = pinchZoom(vStage, vImg, () => ({ w: vStage.clientWidth, h: vStage.clientHeight }));
+let vIdx = 0;
 function openViewer(i){
-  vIdx = i; vImg.src = photos[i]; vReset();
+  vIdx = i; vImg.src = photos[i]; viewerZoom.reset();
   $("viewerThumbs").innerHTML = photoThumbsHtml(vIdx); viewer.hidden = false;
 }
-function closeViewer(){ viewer.hidden = true; vPointers.clear(); vGesture = null; }
+function closeViewer(){ viewer.hidden = true; viewerZoom.clear(); }
 $("viewerClose").addEventListener("click", closeViewer);
-document.addEventListener("keydown", e => { if(e.key === "Escape" && !viewer.hidden) closeViewer(); });
 $("viewerThumbs").addEventListener("click", e => { const b = e.target.closest("button"); if(b) openViewer(+b.dataset.i); });
 $("viewerDel").addEventListener("click", () => {
   photos.splice(vIdx, 1); savePhotos();
   if(photos.length) openViewer(Math.min(vIdx, photos.length - 1)); else closeViewer();
   renderPhotos();
 });
-vStage.addEventListener("pointerdown", e => {
-  try{ vStage.setPointerCapture(e.pointerId); }catch{}
-  const p = vPoint(e);
-  vPointers.set(e.pointerId, p);
-  if(vPointers.size === 1){
-    if(Date.now() - vLastTap < 300){ vScale > 1 ? vReset() : vZoomAt(p, 2.5); vLastTap = 0; vTap = null; }
-    else vTap = p;
-  }else vTap = null;
-  vBegin();
+
+const cropper = $("cropper"), cStage = $("cropStage"), cImg = $("cropImg"), cFrame = $("cropFrame");
+const cropZoom = pinchZoom(cStage, cImg, () => ({ w: cFrame.clientWidth, h: cFrame.clientHeight }));
+async function openCropper(){
+  if(!scanImage) return;
+  $("cropRun").disabled = true;
+  cImg.src = scanPhoto; cropper.hidden = false; cropZoom.reset();
+  getOcrWorker().catch(() => {});
+  try{ await cImg.decode(); }catch{}
+  cropZoom.reset();
+  $("cropRun").disabled = false;
+}
+function closeCropper(){ cropper.hidden = true; cropZoom.clear(); }
+function frameRect(){
+  const { scale, x, y } = cropZoom.z;
+  const iw = cImg.clientWidth, ih = cImg.clientHeight, fw = cFrame.clientWidth, fh = cFrame.clientHeight;
+  const clamp01 = n => Math.min(1, Math.max(0, n));
+  const u = px => clamp01(((px - x) / scale + iw / 2) / iw), v = py => clamp01(((py - y) / scale + ih / 2) / ih);
+  const x0 = u(-fw / 2), y0 = v(-fh / 2);
+  return { x: x0, y: y0, w: u(fw / 2) - x0, h: v(fh / 2) - y0 };
+}
+$("cropClose").addEventListener("click", closeCropper);
+$("cropAll").addEventListener("click", () => { closeCropper(); scanWhole(); });
+$("cropRun").addEventListener("click", () => {
+  const r = frameRect(); closeCropper();
+  if(r.w > .005 && r.h > .005) scanRegion(r); else toast("枠の中に写真がありません");
 });
-vStage.addEventListener("pointermove", e => {
-  if(!vGesture || !vPointers.has(e.pointerId)) return;
-  vPointers.set(e.pointerId, vPoint(e));
-  const c = vCenter();
-  if(vPointers.size > 1 && vGesture.d > 0){
-    const scale = Math.min(5, Math.max(1, vGesture.scale * c.d / vGesture.d));
-    vX = c.x - (vGesture.x - vGesture.tx) * scale / vGesture.scale;
-    vY = c.y - (vGesture.y - vGesture.ty) * scale / vGesture.scale;
-    vScale = scale;
-  }else{
-    vX = vGesture.tx + (c.x - vGesture.x); vY = vGesture.ty + (c.y - vGesture.y);
-  }
-  vClamp(); vApply();
+document.addEventListener("keydown", e => {
+  if(e.key !== "Escape") return;
+  if(!cropper.hidden) closeCropper(); else if(!viewer.hidden) closeViewer();
 });
-["pointerup", "pointercancel"].forEach(t => vStage.addEventListener(t, e => {
-  const p = vPointers.get(e.pointerId);
-  vLastTap = vTap && p && Math.hypot(p.x - vTap.x, p.y - vTap.y) < 12 ? Date.now() : 0;
-  vTap = null; vPointers.delete(e.pointerId); vBegin();
-}));
-vStage.addEventListener("wheel", e => {
-  e.preventDefault();
-  vZoomAt(vPoint(e), Math.min(5, Math.max(1, vScale * (e.deltaY < 0 ? 1.15 : 1 / 1.15))));
-}, { passive: false });
 
 const maker = $("maker"), makerPreview = $("makerPreview");
 const CARD_W = 1080, CARD_H = 1350;
