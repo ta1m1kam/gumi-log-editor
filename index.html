@@ -486,7 +486,7 @@ async function recognizeMultiScale(worker, canvas, onPass){
 }
 function pickCandidates(lines){
   return lines
-    .filter(c => c.text.length >= 2 && c.text.length <= 30 && c.conf >= 40)
+    .filter(c => c.text.length >= 2 && c.conf >= 40)
     .filter(c => /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}A-Za-z0-9]/u.test(c.text))
     .sort((a, b) => b.score - a.score)
     .slice(0, 6)
